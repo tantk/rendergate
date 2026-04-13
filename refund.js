@@ -5,6 +5,7 @@ import {
   Operation,
   Asset,
   Horizon,
+  Memo,
 } from "@stellar/stellar-sdk";
 
 const USDC_ISSUER = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
@@ -76,7 +77,7 @@ export async function sendRefund(payerAddress, amount, memo) {
           amount: amount,
         }),
       )
-      .addMemo(TransactionBuilder.memo("text", (memo || "RenderGate refund").slice(0, 28)))
+      .addMemo(new Memo("text", (memo || "RenderGate refund").slice(0, 28)))
       .setTimeout(30)
       .build();
 
