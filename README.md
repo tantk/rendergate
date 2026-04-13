@@ -11,9 +11,26 @@ app_port: 7860
 
 **Pay-per-render headless browser API, powered by x402 micropayments on Stellar.**
 
-AI agents struggle with JavaScript-rendered websites — SPAs, Twitter/X, DeFi apps, and Cloudflare-protected sites all return empty HTML shells to standard HTTP fetch. RenderGate solves this with a headless browser rendering service that agents pay for per-request via x402 micropayments in USDC on Stellar.
-
 **Live service:** https://tantk-rendergate.hf.space
+
+## Why Agents Need This
+
+Most AI agents are just HTTP clients — they call `fetch()` or `curl` and that's it. No browser engine, no JavaScript execution. When they hit a modern website, they get an empty HTML shell back.
+
+This affects every major agent framework:
+- **Claude Code** — `WebFetch` is HTTP GET only, no JS rendering
+- **OpenAI Codex / GPT agents** — HTTP-based tools
+- **LangChain / CrewAI agents** — Python `requests` library
+- **Trading bots / arb agents** — lightweight scripts, no browser
+- **MCP-based agents** — whatever tools they have, usually plain HTTP
+
+**Why can't agents just install a browser?**
+- Chromium is **500MB+** — too heavy for serverless, Lambda, or lightweight containers
+- Needs system-level dependencies (`libnss3`, `libgbm`, etc.) — not a simple `npm install`
+- Each render uses **200-500MB RAM** — agents on minimal infra can't afford this
+- Browser management is complex — crashes, timeouts, memory leaks, concurrency
+
+**RenderGate:** The agent pays $0.001 USDC and gets fully rendered content in one HTTP call. No browser install, no dependencies, no memory overhead. Heavy lifting happens on our infra. This is the x402 model — pay for compute you can't or don't want to run yourself.
 
 ## How It Works
 
