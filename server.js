@@ -3,12 +3,12 @@ import express from "express";
 import { paymentMiddlewareFromConfig } from "@x402/express";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactStellarScheme } from "@x402/stellar/exact/server";
-import { Transaction, Networks } from "@stellar/stellar-sdk";
 import { renderUrl, closeBrowser } from "./renderer.js";
 import { isFailedRender, sendRefund } from "./refund.js";
 
 const PORT = process.env.PORT || 3001;
 const PRICE = "$0.001";
+const REFUND_AMOUNT = "0.001";
 const NETWORK = "stellar:testnet";
 const FACILITATOR_URL = "https://www.x402.org/facilitator";
 const PAY_TO = process.env.PAY_TO;
@@ -24,7 +24,6 @@ function isAllowedUrl(urlStr) {
     if (!["http:", "https:"].includes(parsed.protocol)) return false;
     const blocked = ["localhost", "127.0.0.1", "0.0.0.0", "[::1]"];
     if (blocked.includes(parsed.hostname)) return false;
-    // Block private/link-local IP ranges
     const parts = parsed.hostname.split(".");
     if (parts[0] === "10") return false;
     if (parts[0] === "172" && +parts[1] >= 16 && +parts[1] <= 31) return false;
@@ -33,6 +32,18 @@ function isAllowedUrl(urlStr) {
     return true;
   } catch {
     return false;
+  }
+}
+
+// Extract payer from the PAYMENT-RESPONSE header (set by x402 after settlement)
+function getPayerFromSettlement(res) {
+  try {
+    const header = res.getHeader("PAYMENT-RESPONSE");
+    if (!header) return null;
+    const decoded = JSON.parse(Buffer.from(header, "base64").toString());
+    return decoded?.payer || null;
+  } catch {
+    return null;
   }
 }
 
@@ -71,6 +82,27 @@ app.use("/render", (req, res, next) => {
   next();
 });
 
+// Post-settlement refund hook — attach finish listener before x402 middleware
+app.use("/render", (req, res, next) => {
+  res.on("finish", async () => {
+    if (!res.locals.needsRefund) return;
+
+    const payer = getPayerFromSettlement(res);
+    if (!payer) {
+      console.log("Refund needed but could not extract payer address");
+      return;
+    }
+
+    const reason = res.locals.failReason || "unknown";
+    console.log(`Issuing refund to ${payer} — reason: ${reason}`);
+    const hash = await sendRefund(payer, REFUND_AMOUNT, `refund:${reason}`);
+    if (hash) {
+      console.log(`Refund sent: ${hash}`);
+    }
+  });
+  next();
+});
+
 // x402 payment middleware — protects /render
 app.use(
   paymentMiddlewareFromConfig(
@@ -91,40 +123,6 @@ app.use(
   ),
 );
 
-// Extract payer address from the incoming payment-signature request header
-function getPayerAddress(req) {
-  try {
-    const header =
-      req.get("payment-signature") || req.get("x-payment") || req.get("PAYMENT-SIGNATURE");
-    if (!header) {
-      console.log("No payment header found");
-      return null;
-    }
-    const decoded = JSON.parse(Buffer.from(header, "base64").toString());
-    const txXdr = decoded?.payload?.transaction;
-    if (!txXdr) {
-      console.log("No transaction in payload");
-      return null;
-    }
-    // The transaction XDR source account is the payer
-    const tx = new Transaction(txXdr, Networks.TESTNET);
-    console.log(`Payer extracted: ${tx.source}`);
-    return tx.source;
-  } catch (err) {
-    console.error("Payer extraction failed:", err.message);
-    // Fallback: try extracting from the x402 settlement response on res
-    try {
-      const respHeader = req.res?.getHeader?.("PAYMENT-RESPONSE");
-      if (respHeader) {
-        const resp = JSON.parse(Buffer.from(respHeader, "base64").toString());
-        console.log(`Payer from response: ${resp.payer}`);
-        return resp.payer;
-      }
-    } catch { /* ignore */ }
-    return null;
-  }
-}
-
 // Protected render endpoint
 app.get("/render", async (req, res) => {
   const decoded = req.decodedUrl;
@@ -135,22 +133,19 @@ app.get("/render", async (req, res) => {
     const result = await renderUrl(decoded);
     const elapsed = Date.now() - start;
 
-    // Check if the render actually succeeded
     const failReason = isFailedRender(result.content, result.title);
-    const payerAddress = getPayerAddress(req);
-    if (failReason && payerAddress) {
-      console.log(`Bad render (${failReason}) for ${decoded} — refunding ${payerAddress}`);
-      const refundHash = await sendRefund(payerAddress, "0.001", `refund:${failReason}`);
+    if (failReason) {
+      // Tag the response so post-settlement hook knows to refund
+      res.locals.needsRefund = true;
+      res.locals.failReason = failReason;
 
       return res.json({
         ...result,
         renderTimeMs: elapsed,
         payment: { price: PRICE, network: NETWORK },
-        refund: {
+        renderFailed: {
           reason: failReason,
-          transaction: refundHash,
-          amount: "0.001 USDC",
-          message: "Page was blocked or empty — payment refunded",
+          message: "Page was blocked or empty — refund will be issued",
         },
       });
     }
@@ -165,18 +160,9 @@ app.get("/render", async (req, res) => {
     if (err.message.includes("Too many concurrent")) {
       return res.status(503).json({ error: err.message });
     }
-    // Attempt refund on crash — agent paid but got nothing
-    const payerAddress = getPayerAddress(req);
-    if (payerAddress) {
-      const refundHash = await sendRefund(payerAddress, "0.001", "refund:render_crash");
-      return res.status(500).json({
-        error: "Render failed",
-        message: err.message,
-        refund: refundHash
-          ? { transaction: refundHash, amount: "0.001 USDC", reason: "render_crash" }
-          : { error: "Refund failed — contact support" },
-      });
-    }
+    // Tag for refund on crash too
+    res.locals.needsRefund = true;
+    res.locals.failReason = "render_crash";
     res.status(500).json({ error: "Render failed", message: err.message });
   }
 });
