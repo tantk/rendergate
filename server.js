@@ -97,7 +97,7 @@ function getPayerAddress(req) {
     const header =
       req.get("payment-signature") || req.get("x-payment") || req.get("PAYMENT-SIGNATURE");
     if (!header) return null;
-    const decoded = JSON.parse(Buffer.from(header, "base64url").toString());
+    const decoded = JSON.parse(Buffer.from(header, "base64").toString());
     // Decode the transaction XDR to get the source account (payer)
     const txXdr = decoded?.payload?.transaction;
     if (!txXdr) return null;
