@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RenderGate — Pay-Per-Render Headless Browser API</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+/* ===========================================
+   CSS CUSTOM PROPERTIES (TERMINAL GREEN THEME)
+   Change these to change the whole look
+   =========================================== */
+:root {
+    /* Colors — Terminal Green / GitHub Dark */
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #21262d;
+    --text-primary: #c9d1d9;
+    --text-secondary: #484f58;
+    --text-muted: #30363d;
+    --green: #39d353;
+    --green-dim: rgba(57, 211, 83, 0.15);
+    --green-glow: rgba(57, 211, 83, 0.5);
+    --cyan: #79c0ff;
+    --orange: #ffa657;
+    --red: #f85149;
+    --yellow: #e3b341;
+    --purple: #bc8cff;
+    --string-blue: #a5d6ff;
+
+    /* Typography — monospace only */
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --title-size: clamp(1.5rem, 5vw, 4rem);
+    --h2-size: clamp(1.1rem, 3vw, 2rem);
+    --h3-size: clamp(0.85rem, 2vw, 1.3rem);
+    --body-size: clamp(0.65rem, 1.2vw, 0.9rem);
+    --small-size: clamp(0.55rem, 0.9vw, 0.75rem);
+
+    /* Spacing */
+    --slide-padding: clamp(1.5rem, 4vw, 4rem);
+    --content-gap: clamp(0.5rem, 1.5vw, 1.5rem);
+    --element-gap: clamp(0.25rem, 0.8vw, 0.8rem);
+
+    /* Animation */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration-normal: 0.6s;
+}
+
+/* ===========================================
+   BASE RESET
+   =========================================== */
+*, *::before, *::after {
+    margin: 0; padding: 0; box-sizing: border-box;
+}
+
+/* ===========================================
+   VIEWPORT FITTING: MANDATORY BASE STYLES
+   =========================================== */
+html, body {
+    height: 100%;
+    overflow-x: hidden;
+    font-family: var(--font-mono);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+html {
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+}
+
+.slide {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--bg-primary);
+}
+
+.slide-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-height: 100%;
+    overflow: hidden;
+    padding: var(--slide-padding);
+}
+
+.card, .container, .content-box {
+    max-width: min(90vw, 1000px);
+    max-height: min(80vh, 700px);
+}
+
+.feature-list, .bullet-list {
+    gap: clamp(0.4rem, 1vh, 1rem);
+}
+
+.feature-list li, .bullet-list li {
+    font-size: var(--body-size);
+    line-height: 1.4;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+    gap: clamp(0.5rem, 1.5vw, 1rem);
+}
+
+img, .image-container {
+    max-width: 100%;
+    max-height: min(50vh, 400px);
+    object-fit: contain;
+}
+
+/* Short viewports */
+@media (max-height: 700px) {
+    :root {
+        --slide-padding: clamp(0.75rem, 3vw, 2rem);
+        --content-gap: clamp(0.4rem, 1.5vw, 1rem);
+        --title-size: clamp(1.25rem, 4.5vw, 2.5rem);
+        --h2-size: clamp(1rem, 3vw, 1.75rem);
+    }
+}
+
+@media (max-height: 600px) {
+    :root {
+        --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
+        --content-gap: clamp(0.3rem, 1vw, 0.75rem);
+        --title-size: clamp(1.1rem, 4vw, 2rem);
+        --body-size: clamp(0.6rem, 1vw, 0.85rem);
+    }
+    .nav-dots, .keyboard-hint, .decorative { display: none; }
+}
+
+@media (max-height: 500px) {
+    :root {
+        --slide-padding: clamp(0.4rem, 2vw, 1rem);
+        --title-size: clamp(1rem, 3.5vw, 1.5rem);
+        --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
+        --body-size: clamp(0.55rem, 0.9vw, 0.75rem);
+    }
+}
+
+@media (max-width: 600px) {
+    :root {
+        --title-size: clamp(1.25rem, 7vw, 2.5rem);
+    }
+    .grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.2s !important;
+    }
+    html { scroll-behavior: auto; }
+}
+
+/* ===========================================
+   GLOBAL TERMINAL EFFECTS
+   =========================================== */
+
+/* CRT scan lines on every slide */
+.slide::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(57, 211, 83, 0.012) 3px,
+        rgba(57, 211, 83, 0.012) 6px
+    );
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* CRT vignette */
+.slide::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.45) 100%);
+    pointer-events: none;
+    z-index: 4;
+}
+
+/* ===========================================
+   REVEAL ANIMATIONS
+   =========================================== */
+.reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity var(--duration-normal) var(--ease-out-expo),
+                transform var(--duration-normal) var(--ease-out-expo);
+}
+
+.slide.visible .reveal {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.slide.visible .reveal:nth-child(1) { transition-delay: 0.1s; }
+.slide.visible .reveal:nth-child(2) { transition-delay: 0.2s; }
+.slide.visible .reveal:nth-child(3) { transition-delay: 0.3s; }
+.slide.visible .reveal:nth-child(4) { transition-delay: 0.4s; }
+.slide.visible .reveal:nth-child(5) { transition-delay: 0.5s; }
+.slide.visible .reveal:nth-child(6) { transition-delay: 0.6s; }
+
+/* Type-in effect */
+@keyframes type-in {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Glow-in for highlighted elements */
+@keyframes glow-in {
+    from { opacity: 0; filter: blur(4px); text-shadow: none; }
+    to { opacity: 1; filter: blur(0); text-shadow: 0 0 10px var(--green-glow); }
+}
+
+/* Line draw */
+@keyframes draw-line {
+    from { transform: scaleX(0); opacity: 0; }
+    to { transform: scaleX(1); opacity: 0.5; }
+}
+
+/* Cursor blink */
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Fade in */
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ===========================================
+   SHARED ELEMENTS
+   =========================================== */
+.prompt { color: var(--green); font-weight: 700; }
+.flag { color: var(--cyan); }
+.value { color: var(--orange); }
+.str { color: var(--string-blue); }
+.comment { color: var(--text-secondary); font-style: italic; }
+.keyword { color: var(--purple); }
+.error { color: var(--red); }
+
+.cursor-blink {
+    display: inline-block;
+    width: 8px;
+    height: clamp(0.7rem, 1.2vw, 1rem);
+    background: var(--green);
+    margin-left: 3px;
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+}
+
+.divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--green), transparent);
+    margin: var(--content-gap) 0;
+    transform-origin: left;
+}
+
+.slide-number {
+    position: absolute;
+    top: clamp(0.8rem, 1.5vw, 1.2rem);
+    right: clamp(1rem, 2vw, 2rem);
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+    z-index: 6;
+}
+
+/* ===========================================
+   STATUS BAR (bottom of every slide)
+   =========================================== */
+.status-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--bg-tertiary);
+    padding: clamp(0.25rem, 0.5vw, 0.4rem) clamp(1rem, 2vw, 2rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+    z-index: 6;
+}
+
+.status-bar .dot-green {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+/* ===========================================
+   PROGRESS BAR
+   =========================================== */
+.progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green-glow);
+    z-index: 1000;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+/* ===========================================
+   NAVIGATION DOTS
+   =========================================== */
+.nav-dots {
+    position: fixed;
+    right: clamp(0.8rem, 1.5vw, 1.2rem);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1px solid var(--text-secondary);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.nav-dot.active {
+    background: var(--green);
+    border-color: var(--green);
+    box-shadow: 0 0 6px var(--green-glow);
+}
+
+.nav-dot:hover {
+    border-color: var(--green);
+}
+
+/* ===========================================
+   SLIDE 1: TITLE
+   =========================================== */
+.title-slide .terminal-window {
+    width: min(90vw, 750px);
+    margin: 0 auto;
+    position: relative;
+    z-index: 6;
+}
+
+.title-slide .prompt-line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: var(--body-size);
+    line-height: 1.8;
+}
+
+.title-slide .ascii-art {
+    color: var(--green);
+    font-size: clamp(0.35rem, 0.75vw, 0.65rem);
+    line-height: 1.15;
+    white-space: pre;
+    text-shadow: 0 0 10px var(--green-glow);
+    margin: var(--content-gap) 0;
+}
+
+.title-slide .info-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: clamp(0.15rem, 0.4vw, 0.3rem) clamp(1rem, 2vw, 2rem);
+    font-size: var(--body-size);
+}
+
+.title-slide .info-key {
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+/* ===========================================
+   SLIDE 2: THE PROBLEM
+   =========================================== */
+.problem-slide .terminal-window {
+    width: min(90vw, 800px);
+    margin: 0 auto;
+    position: relative;
+    z-index: 6;
+}
+
+.problem-slide .section-header {
+    font-size: var(--h2-size);
+    font-weight: 700;
+    color: var(--red);
+    margin-bottom: var(--content-gap);
+    display: flex; align-items: center; gap: 10px;
+}
+
+.problem-slide .error-block {
+    background: rgba(248, 81, 73, 0.08);
+    border: 1px solid rgba(248, 81, 73, 0.25);
+    border-radius: 6px;
+    padding: clamp(0.6rem, 1.2vw, 1rem) clamp(0.8rem, 1.5vw, 1.2rem);
+    margin-bottom: var(--element-gap);
+    font-size: var(--body-size);
+    line-height: 1.6;
+}
+
+.problem-slide .stat-row {
+    display: flex;
+    gap: clamp(0.5rem, 1.5vw, 1.5rem);
+    margin-top: var(--content-gap);
+    flex-wrap: wrap;
+}
+
+.problem-slide .stat-box {
+    flex: 1;
+    min-width: 120px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 6px;
+    padding: clamp(0.5rem, 1vw, 0.8rem);
+    text-align: center;
+}
+
+.problem-slide .stat-val {
+    font-size: var(--h3-size);
+    font-weight: 700;
+    color: var(--red);
+    display: block;
+}
+
+.problem-slide .stat-label {
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+    margin-top: 2px;
+    display: block;
+}
+
+/* ===========================================
+   SLIDE 3: HOW IT WORKS
+   =========================================== */
+.flow-slide .terminal-window {
+    width: min(90vw, 800px);
+    margin: 0 auto;
+    position: relative;
+    z-index: 6;
+}
+
+.flow-slide .section-header {
+    font-size: var(--h2-size);
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: var(--content-gap);
+}
+
+.flow-slide .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: clamp(0.5rem, 1vw, 1rem);
+    padding: clamp(0.4rem, 0.8vw, 0.6rem) 0;
+    font-size: var(--body-size);
+    line-height: 1.5;
+    border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.flow-slide .flow-step:last-child { border-bottom: none; }
+
+.flow-slide .step-num {
+    flex-shrink: 0;
+    width: clamp(1.4rem, 2vw, 1.8rem);
+    height: clamp(1.4rem, 2vw, 1.8rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: var(--small-size);
+    font-weight: 700;
+}
+
+.flow-slide .step-num.req { background: var(--green-dim); color: var(--green); }
+.flow-slide .step-num.pay { background: rgba(121, 192, 255, 0.15); color: var(--cyan); }
+.flow-slide .step-num.sign { background: rgba(255, 166, 87, 0.15); color: var(--orange); }
+.flow-slide .step-num.render { background: rgba(188, 140, 255, 0.15); color: var(--purple); }
+.flow-slide .step-num.json { background: rgba(227, 179, 65, 0.15); color: var(--yellow); }
+
+.flow-slide .step-arrow {
+    color: var(--text-secondary);
+    font-size: var(--small-size);
+    text-align: center;
+    padding: clamp(0.1rem, 0.3vw, 0.2rem) 0;
+}
+
+.flow-slide .code-inline {
+    background: var(--bg-secondary);
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: calc(var(--body-size) * 0.9);
+}
+
+/* ===========================================
+   SLIDE 4: WHAT WORKS / WHAT DOESN'T
+   =========================================== */
+.coverage-slide .terminal-window {
+    width: min(90vw, 850px);
+    margin: 0 auto;
+    position: relative;
+    z-index: 6;
+}
+
+.coverage-slide .section-header {
+    font-size: var(--h2-size);
+    font-weight: 700;
+    color: var(--cyan);
+    margin-bottom: clamp(0.3rem, 0.8vw, 0.6rem);
+}
+
+.coverage-slide .output-note {
+    font-size: var(--body-size);
+    color: var(--text-secondary);
+    margin-bottom: var(--content-gap);
+}
+
+.coverage-slide .output-note .highlight { color: var(--cyan); }
+
+.coverage-slide .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1rem, 2vw, 2rem);
+}
+
+@media (max-width: 700px) {
+    .coverage-slide .two-col { grid-template-columns: 1fr; }
+}
+
+.coverage-slide .col-header {
+    font-size: var(--h3-size);
+    font-weight: 700;
+    margin-bottom: var(--element-gap);
+    display: flex; align-items: center; gap: 6px;
+}
+
+.coverage-slide .col-header.green { color: var(--green); }
+.coverage-slide .col-header.red { color: var(--red); }
+
+.coverage-slide .domain-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(0.25rem, 0.5vw, 0.4rem);
+}
+
+.coverage-slide .tag {
+    font-size: clamp(0.55rem, 0.9vw, 0.75rem);
+    padding: 3px 10px;
+    border-radius: 3px;
+    background: var(--bg-secondary);
+    white-space: nowrap;
+}
+
+.coverage-slide .tag.works {
+    border: 1px solid rgba(57, 211, 83, 0.4);
+    color: var(--green);
+}
+
+.coverage-slide .tag.blocked {
+    border: 1px solid rgba(248, 81, 73, 0.4);
+    color: var(--red);
+    text-decoration: line-through;
+    text-decoration-color: rgba(248, 81, 73, 0.4);
+}
+
+/* ===========================================
+   SLIDE 5: GET STARTED / CTA
+   =========================================== */
+.cta-slide .terminal-window {
+    width: min(90vw, 750px);
+    margin: 0 auto;
+    position: relative;
+    z-index: 6;
+}
+
+.cta-slide .section-header {
+    font-size: var(--h2-size);
+    font-weight: 700;
+    color: var(--yellow);
+    margin-bottom: var(--content-gap);
+}
+
+.cta-slide .code-block {
+    background: var(--bg-secondary);
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 6px;
+    padding: clamp(0.6rem, 1.2vw, 1rem) clamp(0.8rem, 1.5vw, 1.2rem);
+    margin-bottom: var(--element-gap);
+    font-size: var(--body-size);
+    line-height: 1.6;
+    overflow-x: auto;
+}
+
+.cta-slide .code-block .code-label {
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+    margin-bottom: clamp(0.3rem, 0.5vw, 0.5rem);
+    display: flex; align-items: center; gap: 6px;
+}
+
+.cta-slide .cta-footer {
+    text-align: center;
+    margin-top: var(--content-gap);
+    font-size: var(--body-size);
+}
+
+.cta-slide .cta-link {
+    color: var(--green);
+    font-weight: 700;
+    text-decoration: none;
+    text-shadow: 0 0 8px var(--green-glow);
+}
+
+.cta-slide .hackathon-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: var(--element-gap);
+    padding: clamp(0.3rem, 0.6vw, 0.5rem) clamp(0.8rem, 1.5vw, 1.2rem);
+    border: 1px solid var(--yellow);
+    border-radius: 4px;
+    color: var(--yellow);
+    font-size: var(--small-size);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+/* ===========================================
+   INLINE EDITING (opt-in)
+   =========================================== */
+.edit-hotzone {
+    position: fixed;
+    top: 0; left: 0;
+    width: 80px; height: 80px;
+    z-index: 10000;
+    cursor: pointer;
+}
+
+.edit-toggle {
+    position: fixed;
+    top: 12px; left: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--bg-tertiary);
+    color: var(--green);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 10001;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.edit-toggle.show,
+.edit-toggle.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.edit-toggle:hover {
+    background: var(--green-dim);
+}
+
+.edit-banner {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--green);
+    color: var(--bg-primary);
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px;
+    z-index: 9999;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+}
+
+.edit-banner.active {
+    transform: translateY(0);
+}
+
+body.edit-active [contenteditable="true"] {
+    outline: 1px dashed rgba(57, 211, 83, 0.4);
+    outline-offset: 2px;
+    cursor: text;
+    border-radius: 2px;
+}
+
+body.edit-active [contenteditable="true"]:focus {
+    outline-color: var(--green);
+    background: rgba(57, 211, 83, 0.05);
+}
+
+/* ===========================================
+   VOICEOVER CONTROLS
+   =========================================== */
+.audio-toggle {
+    position: fixed;
+    bottom: clamp(2rem, 4vh, 3.5rem);
+    left: clamp(1rem, 2vw, 2rem);
+    background: var(--bg-secondary);
+    border: 1px solid var(--bg-tertiary);
+    color: var(--green);
+    font-family: var(--font-mono);
+    font-size: clamp(0.6rem, 1vw, 0.8rem);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    display: flex; align-items: center; gap: 6px;
+}
+
+.audio-toggle:hover {
+    background: var(--green-dim);
+    border-color: var(--green);
+}
+
+.audio-toggle.muted {
+    color: var(--text-secondary);
+    border-color: var(--bg-tertiary);
+}
+
+/* Autoplay prompt — browsers need a user click first */
+.autoplay-prompt {
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 17, 23, 0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 20000;
+    gap: clamp(0.8rem, 1.5vw, 1.5rem);
+    opacity: 1;
+    transition: opacity 0.4s ease;
+}
+
+.autoplay-prompt.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.autoplay-prompt .play-btn {
+    width: clamp(60px, 10vw, 90px);
+    height: clamp(60px, 10vw, 90px);
+    border-radius: 50%;
+    background: var(--green-dim);
+    border: 2px solid var(--green);
+    color: var(--green);
+    font-size: clamp(1.5rem, 3vw, 2.5rem);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px var(--green-glow);
+    animation: pulse-play 2s infinite ease-in-out;
+}
+
+.autoplay-prompt .play-btn:hover {
+    background: var(--green);
+    color: var(--bg-primary);
+    box-shadow: 0 0 40px var(--green-glow);
+}
+
+@keyframes pulse-play {
+    0%, 100% { box-shadow: 0 0 20px var(--green-glow); }
+    50% { box-shadow: 0 0 35px var(--green-glow), 0 0 60px rgba(57,211,83,0.15); }
+}
+
+.autoplay-prompt .play-label {
+    font-family: var(--font-mono);
+    font-size: var(--body-size);
+    color: var(--text-secondary);
+}
+
+.autoplay-prompt .play-sublabel {
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--text-muted);
+}
+
+/* Audio waveform indicator */
+.audio-indicator {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+}
+
+.audio-indicator .bar {
+    width: 2px;
+    background: var(--green);
+    border-radius: 1px;
+    animation: wave 0.8s ease-in-out infinite;
+}
+
+.audio-indicator .bar:nth-child(1) { height: 4px; animation-delay: 0s; }
+.audio-indicator .bar:nth-child(2) { height: 8px; animation-delay: 0.1s; }
+.audio-indicator .bar:nth-child(3) { height: 12px; animation-delay: 0.2s; }
+.audio-indicator .bar:nth-child(4) { height: 6px; animation-delay: 0.3s; }
+
+@keyframes wave {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.4); }
+}
+
+.audio-toggle.muted .audio-indicator .bar {
+    animation: none;
+    height: 3px;
+    background: var(--text-secondary);
+}
+</style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Navigation dots -->
+<nav class="nav-dots" id="navDots"></nav>
+
+<!-- Autoplay prompt (browsers need user gesture for audio) -->
+<div class="autoplay-prompt" id="autoplayPrompt">
+    <button class="play-btn" id="playBtn" aria-label="Start presentation with voiceover">&#x25B6;</button>
+    <div class="play-label">Click to start with voiceover</div>
+    <div class="play-sublabel">30s &bull; 5 slides &bull; auto-advance</div>
+</div>
+
+<!-- Audio mute toggle -->
+<button class="audio-toggle" id="audioToggle" aria-label="Toggle voiceover">
+    <span class="audio-indicator">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </span>
+    <span id="audioLabel">voice on</span>
+</button>
+
+<!-- Edit mode UI -->
+<div class="edit-hotzone" id="editHotzone"></div>
+<button class="edit-toggle" id="editToggle">[ edit ]</button>
+<div class="edit-banner" id="editBanner">EDIT MODE — click any text to edit &bull; Ctrl+S to save</div>
+
+<!-- =============================================
+     SLIDE 1: TITLE — RenderGate intro
+     ============================================= -->
+<section class="slide title-slide" id="slide-0">
+    <span class="slide-number">01/05</span>
+    <div class="slide-content">
+        <div class="terminal-window">
+            <div class="prompt-line reveal">
+                <span class="prompt">$</span>&nbsp;
+                <span>curl <span class="flag">-X GET</span> <span class="str">"rendergate.app/render?url=..."</span></span>
+            </div>
+            <div class="prompt-line reveal">
+                <span class="prompt">&larr;</span>&nbsp;
+                <span><span class="value">402</span> Payment Required <span class="flag">|</span> <span class="str">$0.001 USDC</span></span>
+            </div>
+            <div class="prompt-line reveal">
+                <span class="prompt">$</span>&nbsp;
+                <span>stellar sign <span class="flag">--amount</span> <span class="value">0.001</span> <span class="flag">--send</span><span class="cursor-blink"></span></span>
+            </div>
+
+            <div class="divider reveal"></div>
+
+            <pre class="ascii-art reveal" aria-label="RenderGate ASCII logo">
+ ╦═╗╔═╗╔╗╔╔╦╗╔═╗╦═╗  ╔═╗╔═╗╔╦╗╔═╗
+ ╠╦╝║╣ ║║║ ║║║╣ ╠╦╝  ║ ╦╠═╣ ║ ║╣
+ ╩╚═╚═╝╝╚╝═╩╝╚═╝╩╚═  ╚═╝╩ ╩ ╩ ╚═╝</pre>
+
+            <div class="info-grid reveal">
+                <span class="info-key">SERVICE</span>
+                <span>Headless browser API for <span class="prompt">AI agents</span></span>
+                <span class="info-key">PRICE</span>
+                <span><span class="prompt">$0.001</span> USDC per render</span>
+                <span class="info-key">NETWORK</span>
+                <span><span class="flag">Stellar</span> x402 protocol</span>
+                <span class="info-key">ENGINE</span>
+                <span><span class="value">Playwright</span> + Chromium</span>
+            </div>
+        </div>
+    </div>
+    <div class="status-bar">
+        <span><span class="dot-green"></span>rendergate-live</span>
+        <span>stellar:testnet</span>
+        <span>Stellar Hacks 2025</span>
+    </div>
+</section>
+
+<!-- =============================================
+     SLIDE 2: THE PROBLEM
+     ============================================= -->
+<section class="slide problem-slide" id="slide-1">
+    <span class="slide-number">02/05</span>
+    <div class="slide-content">
+        <div class="terminal-window">
+            <div class="section-header reveal">
+                <span class="error">&#x2718;</span> The Problem
+            </div>
+
+            <div class="error-block reveal">
+                <span class="comment">// AI agents are HTTP clients — they can't execute JavaScript</span><br>
+                <span class="error">fetch</span>(<span class="str">"https://app.uniswap.org"</span>)<br>
+                &nbsp;&nbsp;<span class="comment">// &rarr; Returns empty &lt;div id="root"&gt;&lt;/div&gt;</span><br>
+                &nbsp;&nbsp;<span class="comment">// &rarr; Zero useful content from any SPA</span>
+            </div>
+
+            <div class="error-block reveal">
+                <span class="comment">// "Just install Chromium" isn't a solution for agents</span><br>
+                <span class="error">apt install chromium</span> <span class="comment">// +500MB disk, libnss3, libgbm...</span><br>
+                <span class="error">browser.launch()</span> <span class="comment">// +200-500MB RAM per instance</span><br>
+                <span class="comment">// Crashes, timeouts, memory leaks, zombie processes</span>
+            </div>
+
+            <div class="stat-row reveal">
+                <div class="stat-box">
+                    <span class="stat-val">500MB+</span>
+                    <span class="stat-label">Chromium install</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val">200-500MB</span>
+                    <span class="stat-label">RAM per render</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val">90%+</span>
+                    <span class="stat-label">SPAs need JS</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="status-bar">
+        <span><span class="dot-green"></span>problem-space</span>
+        <span>agents can't see the modern web</span>
+    </div>
+</section>
+
+<!-- =============================================
+     SLIDE 3: HOW IT WORKS — x402 payment flow
+     ============================================= -->
+<section class="slide flow-slide" id="slide-2">
+    <span class="slide-number">03/05</span>
+    <div class="slide-content">
+        <div class="terminal-window">
+            <div class="section-header reveal">
+                <span class="prompt">&#x25B6;</span> How It Works
+            </div>
+
+            <div class="flow-step reveal">
+                <span class="step-num req">1</span>
+                <div>
+                    Agent requests <span class="code-inline">GET /render?url=<span class="str">target</span></span><br>
+                    <span class="comment">// Any public URL — social, DeFi, analytics, news</span>
+                </div>
+            </div>
+
+            <div class="flow-step reveal">
+                <span class="step-num pay">2</span>
+                <div>
+                    Server returns <span class="value">402 Payment Required</span><br>
+                    <span class="comment">// Includes Stellar payment details via x402 header</span>
+                </div>
+            </div>
+
+            <div class="flow-step reveal">
+                <span class="step-num sign">3</span>
+                <div>
+                    Agent signs <span class="code-inline"><span class="value">$0.001</span> USDC</span> on Stellar testnet<br>
+                    <span class="comment">// x402.org facilitator verifies — ~5s settlement</span>
+                </div>
+            </div>
+
+            <div class="flow-step reveal">
+                <span class="step-num render">4</span>
+                <div>
+                    Playwright renders page with <span class="keyword">smart waiting</span><br>
+                    <span class="comment">// Lazy-load handling, dynamic scroll, SPA hydration</span>
+                </div>
+            </div>
+
+            <div class="flow-step reveal">
+                <span class="step-num json">5</span>
+                <div>
+                    Returns structured JSON: title, headings, links, content<br>
+                    <span class="comment">// Blocked page? Auto-refund on-chain. Zero risk.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="status-bar">
+        <span><span class="dot-green"></span>x402-flow</span>
+        <span>request &rarr; 402 &rarr; sign &rarr; render &rarr; JSON</span>
+    </div>
+</section>
+
+<!-- =============================================
+     SLIDE 4: WHAT WORKS / WHAT DOESN'T
+     ============================================= -->
+<section class="slide coverage-slide" id="slide-3">
+    <span class="slide-number">04/05</span>
+    <div class="slide-content">
+        <div class="terminal-window">
+            <div class="section-header reveal">
+                <span class="flag">&#x2699;</span> What Works
+            </div>
+
+            <div class="output-note reveal">
+                Returns <span class="highlight">structured JSON</span> — title, headings, links, and full page content.
+            </div>
+
+            <div class="two-col">
+                <div class="reveal">
+                    <div class="col-header green"><span>&#x2713;</span> Works (40+ domains)</div>
+                    <div class="domain-tags">
+                        <span class="tag works">Uniswap</span>
+                        <span class="tag works">Aave</span>
+                        <span class="tag works">Compound</span>
+                        <span class="tag works">CoinGecko</span>
+                        <span class="tag works">DeFiLlama</span>
+                        <span class="tag works">Dune</span>
+                        <span class="tag works">X / Twitter</span>
+                        <span class="tag works">LinkedIn</span>
+                        <span class="tag works">TikTok</span>
+                        <span class="tag works">Coinbase</span>
+                        <span class="tag works">OKX</span>
+                        <span class="tag works">Kraken</span>
+                        <span class="tag works">StellarTerm</span>
+                        <span class="tag works">Soroswap</span>
+                        <span class="tag works">LOBSTR</span>
+                        <span class="tag works">Blur</span>
+                        <span class="tag works">DexScreener</span>
+                        <span class="tag works">Freighter</span>
+                    </div>
+                </div>
+
+                <div class="reveal">
+                    <div class="col-header red"><span>&#x2718;</span> Blocked</div>
+                    <div class="domain-tags">
+                        <span class="tag blocked">Reddit</span>
+                        <span class="tag blocked">Binance</span>
+                        <span class="tag blocked">Etherscan</span>
+                        <span class="tag blocked">Instagram</span>
+                        <span class="tag blocked">OpenSea</span>
+                        <span class="tag blocked">ProductHunt</span>
+                    </div>
+                    <div class="output-note reveal" style="margin-top: var(--element-gap); font-size: var(--small-size);">
+                        <span class="comment">// IP reputation / Cloudflare — not a rendering issue</span><br>
+                        <span class="comment">// Blocked pages get auto-refunded on-chain</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="status-bar">
+        <span><span class="dot-green"></span>coverage</span>
+        <span>structured JSON output</span>
+        <span>blocked = auto-refund</span>
+    </div>
+</section>
+
+<!-- =============================================
+     SLIDE 5: GET STARTED / CTA
+     ============================================= -->
+<section class="slide cta-slide" id="slide-4">
+    <span class="slide-number">05/05</span>
+    <div class="slide-content">
+        <div class="terminal-window">
+            <div class="section-header reveal">
+                <span class="value">&#x26A1;</span> Get Started
+            </div>
+
+            <div class="code-block reveal">
+                <div class="code-label"><span class="prompt">&#x25CF;</span> Option 1: MCP Tool (Claude Code)</div>
+                <span class="comment">// .mcp.json — transparent payment handling</span><br>
+                {<br>
+                &nbsp;&nbsp;<span class="str">"mcpServers"</span>: {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"rendergate"</span>: {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"command"</span>: <span class="str">"node"</span>,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"args"</span>: [<span class="str">"mcp-server.js"</span>]<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                &nbsp;&nbsp;}<br>
+                }
+            </div>
+
+            <div class="code-block reveal">
+                <div class="code-label"><span class="flag">&#x25CF;</span> Option 2: x402 Fetch (Node.js)</div>
+                <span class="keyword">import</span> { wrapFetch } <span class="keyword">from</span> <span class="str">"@x402/fetch"</span>;<br>
+                <span class="keyword">const</span> res = <span class="keyword">await</span> fetch402(<br>
+                &nbsp;&nbsp;<span class="str">`rendergate.app/render?url=${url}`</span><br>
+                );
+            </div>
+
+            <div class="cta-footer reveal">
+                <a href="https://github.com/tantk/rendergate" class="cta-link" target="_blank">github.com/tantk/rendergate</a>
+                <div class="hackathon-badge">
+                    <span>&#x2605;</span> Built for Stellar Hacks: Agents Hackathon
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="status-bar">
+        <span><span class="dot-green"></span>ready</span>
+        <span>$0.001 USDC &bull; zero agent overhead</span>
+        <span>github.com/tantk/rendergate</span>
+    </div>
+</section>
+
+<!-- =============================================
+     PRESENTATION CONTROLLER
+     ============================================= -->
+<script>
+/* ===========================================
+   SLIDE PRESENTATION CONTROLLER
+   Handles navigation, animations, progress
+   =========================================== */
+class SlidePresentation {
+    constructor() {
+        this.slides = document.querySelectorAll('.slide');
+        this.currentSlide = 0;
+        this.isScrolling = false;
+        this.scrollTimeout = null;
+
+        this.setupIntersectionObserver();
+        this.setupKeyboardNav();
+        this.setupTouchNav();
+        this.setupWheelNav();
+        this.setupProgressBar();
+        this.setupNavDots();
+
+        // Mark first slide visible
+        this.slides[0]?.classList.add('visible');
+    }
+
+    /* --- Intersection Observer: add .visible on scroll --- */
+    setupIntersectionObserver() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    const idx = Array.from(this.slides).indexOf(entry.target);
+                    if (idx !== -1) {
+                        this.currentSlide = idx;
+                        this.updateProgressBar();
+                        this.updateNavDots();
+                    }
+                }
+            });
+        }, { threshold: 0.5 });
+
+        this.slides.forEach(slide => observer.observe(slide));
+    }
+
+    /* --- Keyboard: arrows, space, page up/down --- */
+    setupKeyboardNav() {
+        document.addEventListener('keydown', (e) => {
+            // Skip if editing text
+            if (e.target.getAttribute('contenteditable')) return;
+
+            switch(e.key) {
+                case 'ArrowDown':
+                case 'ArrowRight':
+                case ' ':
+                case 'PageDown':
+                    e.preventDefault();
+                    this.goToSlide(this.currentSlide + 1);
+                    break;
+                case 'ArrowUp':
+                case 'ArrowLeft':
+                case 'PageUp':
+                    e.preventDefault();
+                    this.goToSlide(this.currentSlide - 1);
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    this.goToSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    this.goToSlide(this.slides.length - 1);
+                    break;
+            }
+        });
+    }
+
+    /* --- Touch/swipe --- */
+    setupTouchNav() {
+        let startY = 0;
+        document.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            const diff = startY - e.changedTouches[0].clientY;
+            if (Math.abs(diff) > 50) {
+                this.goToSlide(this.currentSlide + (diff > 0 ? 1 : -1));
+            }
+        }, { passive: true });
+    }
+
+    /* --- Mouse wheel --- */
+    setupWheelNav() {
+        document.addEventListener('wheel', (e) => {
+            if (this.isScrolling) return;
+            this.isScrolling = true;
+
+            if (e.deltaY > 30) {
+                this.goToSlide(this.currentSlide + 1);
+            } else if (e.deltaY < -30) {
+                this.goToSlide(this.currentSlide - 1);
+            }
+
+            clearTimeout(this.scrollTimeout);
+            this.scrollTimeout = setTimeout(() => {
+                this.isScrolling = false;
+            }, 800);
+        }, { passive: true });
+    }
+
+    /* --- Navigation --- */
+    goToSlide(index) {
+        if (index < 0 || index >= this.slides.length) return;
+        this.currentSlide = index;
+        this.slides[index].scrollIntoView({ behavior: 'smooth' });
+        this.updateProgressBar();
+        this.updateNavDots();
+    }
+
+    /* --- Progress bar --- */
+    setupProgressBar() {
+        this.progressBar = document.getElementById('progressBar');
+        this.updateProgressBar();
+    }
+
+    updateProgressBar() {
+        if (!this.progressBar) return;
+        const pct = ((this.currentSlide + 1) / this.slides.length) * 100;
+        this.progressBar.style.width = pct + '%';
+    }
+
+    /* --- Nav dots --- */
+    setupNavDots() {
+        const container = document.getElementById('navDots');
+        if (!container) return;
+        container.innerHTML = '';
+
+        this.slides.forEach((_, i) => {
+            const dot = document.createElement('button');
+            dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+            dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+            dot.addEventListener('click', () => this.goToSlide(i));
+            container.appendChild(dot);
+        });
+    }
+
+    updateNavDots() {
+        const dots = document.querySelectorAll('.nav-dot');
+        dots.forEach((dot, i) => {
+            dot.classList.toggle('active', i === this.currentSlide);
+        });
+    }
+}
+
+/* ===========================================
+   INLINE EDITOR
+   Hover top-left corner or press E to toggle
+   =========================================== */
+class InlineEditor {
+    constructor() {
+        this.isActive = false;
+        this.editToggle = document.getElementById('editToggle');
+        this.editBanner = document.getElementById('editBanner');
+        this.editHotzone = document.getElementById('editHotzone');
+        this.hideTimeout = null;
+
+        this.setupHotzone();
+        this.setupKeyboard();
+        this.loadSaved();
+    }
+
+    /* Toggle edit mode on/off */
+    toggleEditMode() {
+        this.isActive = !this.isActive;
+
+        if (this.isActive) {
+            document.body.classList.add('edit-active');
+            this.editToggle.classList.add('active');
+            this.editToggle.textContent = '[ done ]';
+            this.editBanner.classList.add('active');
+            this.makeEditable(true);
+        } else {
+            document.body.classList.remove('edit-active');
+            this.editToggle.classList.remove('active');
+            this.editToggle.textContent = '[ edit ]';
+            this.editBanner.classList.remove('active');
+            this.makeEditable(false);
+            this.saveToLocalStorage();
+        }
+    }
+
+    /* Make all text elements editable */
+    makeEditable(state) {
+        const selectors = 'h1, h2, h3, p, span:not(.prompt):not(.flag):not(.value):not(.str):not(.keyword):not(.comment):not(.error):not(.dot-green):not(.cursor-blink):not(.step-num):not(.feature-icon):not(.nav-dot), .info-key, .info-val, .stat-val, .stat-label, .feature-item, .code-label, .tag';
+        document.querySelectorAll(selectors).forEach(el => {
+            if (state) {
+                el.setAttribute('contenteditable', 'true');
+            } else {
+                el.removeAttribute('contenteditable');
+            }
+        });
+    }
+
+    /* Hotzone hover with 400ms grace period */
+    setupHotzone() {
+        this.editHotzone.addEventListener('mouseenter', () => {
+            clearTimeout(this.hideTimeout);
+            this.editToggle.classList.add('show');
+        });
+        this.editHotzone.addEventListener('mouseleave', () => {
+            this.hideTimeout = setTimeout(() => {
+                if (!this.isActive) this.editToggle.classList.remove('show');
+            }, 400);
+        });
+        this.editToggle.addEventListener('mouseenter', () => {
+            clearTimeout(this.hideTimeout);
+        });
+        this.editToggle.addEventListener('mouseleave', () => {
+            this.hideTimeout = setTimeout(() => {
+                if (!this.isActive) this.editToggle.classList.remove('show');
+            }, 400);
+        });
+        this.editToggle.addEventListener('click', () => this.toggleEditMode());
+        this.editHotzone.addEventListener('click', () => this.toggleEditMode());
+    }
+
+    /* E key shortcut */
+    setupKeyboard() {
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) {
+                this.toggleEditMode();
+            }
+            // Ctrl+S to save/export
+            if (e.key === 's' && (e.ctrlKey || e.metaKey) && this.isActive) {
+                e.preventDefault();
+                this.exportFile();
+            }
+        });
+    }
+
+    /* Save to localStorage */
+    saveToLocalStorage() {
+        try {
+            const data = {};
+            document.querySelectorAll('[contenteditable]').forEach((el, i) => {
+                data[i] = el.innerHTML;
+            });
+            localStorage.setItem('rendergate-slides', JSON.stringify(data));
+        } catch (e) { /* silent */ }
+    }
+
+    /* Load from localStorage */
+    loadSaved() {
+        try {
+            const saved = localStorage.getItem('rendergate-slides');
+            if (!saved) return;
+            const data = JSON.parse(saved);
+            // Saved data exists but we don't auto-apply — user must opt in
+        } catch (e) { /* silent */ }
+    }
+
+    /* Export clean file */
+    exportFile() {
+        const editableEls = Array.from(document.querySelectorAll('[contenteditable]'));
+        editableEls.forEach(el => el.removeAttribute('contenteditable'));
+        document.body.classList.remove('edit-active');
+
+        this.editToggle?.classList.remove('active', 'show');
+        this.editBanner?.classList.remove('active', 'show');
+
+        const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+        document.body.classList.add('edit-active');
+        editableEls.forEach(el => el.setAttribute('contenteditable', 'true'));
+        this.editToggle?.classList.add('active');
+        this.editBanner?.classList.add('active');
+
+        const blob = new Blob([html], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'rendergate-presentation.html';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+}
+
+/* ===========================================
+   VOICEOVER CONTROLLER
+   Auto-plays audio per slide, auto-advances
+   =========================================== */
+class VoiceoverController {
+    constructor(presentation) {
+        this.presentation = presentation;
+        this.muted = false;
+        this.autoAdvance = false;
+        this.currentAudio = null;
+        this.audioFiles = [
+            'audio/slide1.mp3',
+            'audio/slide2.mp3',
+            'audio/slide3.mp3',
+            'audio/slide4.mp3',
+            'audio/slide5.mp3'
+        ];
+
+        // Preload all audio
+        this.audioElements = this.audioFiles.map(src => {
+            const audio = new Audio(src);
+            audio.preload = 'auto';
+            return audio;
+        });
+
+        this.setupToggle();
+        this.setupAutoplay();
+    }
+
+    /* Mute/unmute toggle */
+    setupToggle() {
+        const toggle = document.getElementById('audioToggle');
+        const label = document.getElementById('audioLabel');
+        toggle.addEventListener('click', () => {
+            this.muted = !this.muted;
+            toggle.classList.toggle('muted', this.muted);
+            label.textContent = this.muted ? 'voice off' : 'voice on';
+            if (this.muted && this.currentAudio) {
+                this.currentAudio.pause();
+            }
+        });
+    }
+
+    /* Autoplay prompt — starts presentation with voice */
+    setupAutoplay() {
+        const prompt = document.getElementById('autoplayPrompt');
+        const playBtn = document.getElementById('playBtn');
+
+        playBtn.addEventListener('click', () => {
+            prompt.classList.add('hidden');
+            this.autoAdvance = true;
+            // Start playing slide 1
+            this.playSlide(0);
+        });
+
+        // Also allow skipping with any key
+        document.addEventListener('keydown', (e) => {
+            if (!prompt.classList.contains('hidden')) {
+                prompt.classList.add('hidden');
+                this.autoAdvance = true;
+                this.playSlide(0);
+            }
+        }, { once: true });
+    }
+
+    /* Play audio for a given slide index */
+    playSlide(index) {
+        // Stop current audio
+        if (this.currentAudio) {
+            this.currentAudio.pause();
+            this.currentAudio.currentTime = 0;
+        }
+
+        if (this.muted || index < 0 || index >= this.audioElements.length) return;
+
+        this.currentAudio = this.audioElements[index];
+        this.currentAudio.currentTime = 0;
+
+        // Auto-advance to next slide when audio ends
+        this.currentAudio.onended = () => {
+            if (this.autoAdvance && index < this.audioElements.length - 1) {
+                const nextIdx = index + 1;
+                this.presentation.goToSlide(nextIdx);
+                // Small delay before playing next slide audio
+                setTimeout(() => this.playSlide(nextIdx), 400);
+            }
+        };
+
+        this.currentAudio.play().catch(() => {
+            // Autoplay blocked — user hasn't interacted yet
+        });
+    }
+}
+
+/* Initialize */
+const presentation = new SlidePresentation();
+const editor = new InlineEditor();
+const voiceover = new VoiceoverController(presentation);
+
+/* Hook voiceover into slide navigation */
+const originalGoToSlide = presentation.goToSlide.bind(presentation);
+presentation.goToSlide = function(index) {
+    originalGoToSlide(index);
+    // Only play if user manually navigated (not auto-advance, which handles its own playback)
+    if (!voiceover.autoAdvance) {
+        voiceover.playSlide(index);
+    }
+};
+
+/* Also hook into intersection observer for scroll-based navigation */
+const originalSetupIO = presentation.setupIntersectionObserver.bind(presentation);
+// Patch: play audio when slide becomes visible via scroll
+document.addEventListener('scroll', () => {
+    // Debounce handled by the presentation controller
+}, { passive: true });
+</script>
+</body>
+</html>
