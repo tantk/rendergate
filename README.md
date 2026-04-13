@@ -98,6 +98,7 @@ All tested against the live deployed service at `tantk-rendergate.hf.space` with
 | decrypt.co | 4.0s | Full news feed, coin prices (14K chars) |
 | blockworks.co | 7.4s | Analytics, prices, articles |
 | theblock.co | 5.2s | News content (behind cookie wall) |
+| medium.com (articles) | ~6s | Full articles (21K chars) — Cloudflare-blocked for normal fetch, works via RenderGate |
 
 ### Stellar Ecosystem
 
@@ -152,7 +153,7 @@ These sites block requests from data center IPs regardless of rendering — this
 | etherscan.io | Cloudflare challenge |
 | messari.io | Vercel security checkpoint |
 | instagram.com | Requires login |
-| medium.com | Server error (500) |
+
 | opensea.io | Cloudflare challenge |
 | dune.com | Cloudflare block |
 | alchemy.com | Blocked |
