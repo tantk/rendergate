@@ -16,7 +16,7 @@ RUN npm ci --omit=dev
 # Install Playwright Chromium
 RUN npx playwright install chromium
 
-COPY server.js renderer.js ./
+COPY server.js renderer.js refund.js ./
 
 USER node
 ENV PORT=7860

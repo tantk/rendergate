@@ -4,6 +4,7 @@ import { paymentMiddlewareFromConfig } from "@x402/express";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactStellarScheme } from "@x402/stellar/exact/server";
 import { renderUrl, closeBrowser } from "./renderer.js";
+import { isFailedRender, sendRefund } from "./refund.js";
 
 const PORT = process.env.PORT || 3001;
 const PRICE = "$0.001";
@@ -89,6 +90,18 @@ app.use(
   ),
 );
 
+// Extract payer address from the PAYMENT-RESPONSE header set by x402 middleware
+function getPayerFromResponse(res) {
+  try {
+    const header = res.getHeader("PAYMENT-RESPONSE");
+    if (!header) return null;
+    const decoded = JSON.parse(Buffer.from(header, "base64").toString());
+    return decoded?.payer || null;
+  } catch {
+    return null;
+  }
+}
+
 // Protected render endpoint
 app.get("/render", async (req, res) => {
   const decoded = req.decodedUrl;
@@ -98,6 +111,26 @@ app.get("/render", async (req, res) => {
     const start = Date.now();
     const result = await renderUrl(decoded);
     const elapsed = Date.now() - start;
+
+    // Check if the render actually succeeded
+    const failReason = isFailedRender(result.content, result.title);
+    const payerAddress = getPayerFromResponse(res);
+    if (failReason && payerAddress) {
+      console.log(`Bad render (${failReason}) for ${decoded} — refunding ${payerAddress}`);
+      const refundHash = await sendRefund(payerAddress, "0.001", `refund:${failReason}`);
+
+      return res.json({
+        ...result,
+        renderTimeMs: elapsed,
+        payment: { price: PRICE, network: NETWORK },
+        refund: {
+          reason: failReason,
+          transaction: refundHash,
+          amount: "0.001 USDC",
+          message: "Page was blocked or empty — payment refunded",
+        },
+      });
+    }
 
     res.json({
       ...result,
