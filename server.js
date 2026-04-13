@@ -96,14 +96,31 @@ function getPayerAddress(req) {
   try {
     const header =
       req.get("payment-signature") || req.get("x-payment") || req.get("PAYMENT-SIGNATURE");
-    if (!header) return null;
+    if (!header) {
+      console.log("No payment header found");
+      return null;
+    }
     const decoded = JSON.parse(Buffer.from(header, "base64").toString());
-    // Decode the transaction XDR to get the source account (payer)
     const txXdr = decoded?.payload?.transaction;
-    if (!txXdr) return null;
+    if (!txXdr) {
+      console.log("No transaction in payload");
+      return null;
+    }
+    // The transaction XDR source account is the payer
     const tx = new Transaction(txXdr, Networks.TESTNET);
+    console.log(`Payer extracted: ${tx.source}`);
     return tx.source;
-  } catch {
+  } catch (err) {
+    console.error("Payer extraction failed:", err.message);
+    // Fallback: try extracting from the x402 settlement response on res
+    try {
+      const respHeader = req.res?.getHeader?.("PAYMENT-RESPONSE");
+      if (respHeader) {
+        const resp = JSON.parse(Buffer.from(respHeader, "base64").toString());
+        console.log(`Payer from response: ${resp.payer}`);
+        return resp.payer;
+      }
+    } catch { /* ignore */ }
     return null;
   }
 }
