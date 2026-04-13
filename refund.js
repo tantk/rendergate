@@ -76,7 +76,7 @@ export async function sendRefund(payerAddress, amount, memo) {
           amount: amount,
         }),
       )
-      .addMemo(TransactionBuilder.memo("text", memo || "RenderGate refund"))
+      .addMemo(TransactionBuilder.memo("text", (memo || "RenderGate refund").slice(0, 28)))
       .setTimeout(30)
       .build();
 

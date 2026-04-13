@@ -102,7 +102,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: `# ${result.title}\n\nURL: ${result.url}\nRendered: ${result.renderedAt}\nRender time: ${result.renderTimeMs}ms\nPayment: ${result.payment?.price} on ${result.payment?.network}\n\n${result.content}`,
+            text: `# ${result.title}\n\nURL: ${result.url}\nRendered: ${result.renderedAt}\nRender time: ${result.renderTimeMs}ms\nPayment: ${result.payment?.price} on ${result.payment?.network}${result.refund ? `\nRefund: ${result.refund.amount} — ${result.refund.reason} (tx: ${result.refund.transaction})` : ""}\n\n${result.content}`,
           },
         ],
       };

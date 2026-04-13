@@ -3,6 +3,7 @@ import express from "express";
 import { paymentMiddlewareFromConfig } from "@x402/express";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactStellarScheme } from "@x402/stellar/exact/server";
+import { Transaction, Networks } from "@stellar/stellar-sdk";
 import { renderUrl, closeBrowser } from "./renderer.js";
 import { isFailedRender, sendRefund } from "./refund.js";
 
@@ -90,13 +91,18 @@ app.use(
   ),
 );
 
-// Extract payer address from the PAYMENT-RESPONSE header set by x402 middleware
-function getPayerFromResponse(res) {
+// Extract payer address from the incoming payment-signature request header
+function getPayerAddress(req) {
   try {
-    const header = res.getHeader("PAYMENT-RESPONSE");
+    const header =
+      req.get("payment-signature") || req.get("x-payment") || req.get("PAYMENT-SIGNATURE");
     if (!header) return null;
-    const decoded = JSON.parse(Buffer.from(header, "base64").toString());
-    return decoded?.payer || null;
+    const decoded = JSON.parse(Buffer.from(header, "base64url").toString());
+    // Decode the transaction XDR to get the source account (payer)
+    const txXdr = decoded?.payload?.transaction;
+    if (!txXdr) return null;
+    const tx = new Transaction(txXdr, Networks.TESTNET);
+    return tx.source;
   } catch {
     return null;
   }
@@ -114,7 +120,7 @@ app.get("/render", async (req, res) => {
 
     // Check if the render actually succeeded
     const failReason = isFailedRender(result.content, result.title);
-    const payerAddress = getPayerFromResponse(res);
+    const payerAddress = getPayerAddress(req);
     if (failReason && payerAddress) {
       console.log(`Bad render (${failReason}) for ${decoded} — refunding ${payerAddress}`);
       const refundHash = await sendRefund(payerAddress, "0.001", `refund:${failReason}`);
@@ -141,6 +147,18 @@ app.get("/render", async (req, res) => {
     console.error(`Render failed for ${decoded}:`, err.message);
     if (err.message.includes("Too many concurrent")) {
       return res.status(503).json({ error: err.message });
+    }
+    // Attempt refund on crash — agent paid but got nothing
+    const payerAddress = getPayerAddress(req);
+    if (payerAddress) {
+      const refundHash = await sendRefund(payerAddress, "0.001", "refund:render_crash");
+      return res.status(500).json({
+        error: "Render failed",
+        message: err.message,
+        refund: refundHash
+          ? { transaction: refundHash, amount: "0.001 USDC", reason: "render_crash" }
+          : { error: "Refund failed — contact support" },
+      });
     }
     res.status(500).json({ error: "Render failed", message: err.message });
   }
