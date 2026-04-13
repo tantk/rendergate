@@ -1,0 +1,29 @@
+=== RenderGate: https://www.producthunt.com ===
+Payment: $0.001 USDC on stellar:testnet
+Render time: 2896ms
+
+Title: Just a moment...
+
+Headings (3):
+  H1: www.producthunt.com
+  H2: Performing security verification
+  H2: Verification successful. Waiting for www.producthunt.com to respond
+
+Links (2):
+  Cloudflare → https://www.cloudflare.com/?utm_source=challenge&utm_campaign=m
+  Privacy → https://www.cloudflare.com/privacypolicy/
+
+*** AUTO-REFUND ***
+Reason: blocked_page
+Refund amount: 0.001 USDC
+Refund transaction: 2d91f45b09e684c0096bf19eb5482858e7074b3bc143768626daaeb101a94557
+Verify: https://stellar.expert/explorer/testnet/tx/2d91f45b09e684c0096bf19eb5482858e7074b3bc143768626daaeb101a94557
+
+Content (266 chars):
+www.producthunt.com
+Performing security verification
+
+This website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.
+
+Ray ID: 9eba8a361b3fa13a
+Performance and Security by CloudflarePrivacy

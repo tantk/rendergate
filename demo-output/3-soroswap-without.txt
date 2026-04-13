@@ -1,0 +1,9 @@
+=== Normal HTTP Fetch: soroswap.finance ===
+Command: curl https://soroswap.finance
+
+Soroswap - The First DEX Aggregator on Stellar { "@context": "https://schema.org", "@type": "Organization", "name": "Soroswap", "alternateName": ["Soroswap Finance", "Soroswap DEX"], "url": "https://soroswap.finance", "logo": "https://soroswap.finance/logo512.png", "description": "Soroswap is the first DEX aggregator on Stellar blockchain, enabling token swaps at the best prices across multiple DEXs including Soroswap AMM, Aquarius, Phoenix, and Stellar Classic DEX.", "foundingDate": "2023", "fo
+
+--- Total HTML size: 6947 bytes
+--- Visible text: 3933 chars
+--- DEX data: not available
+--- No API exists for Soroswap UI content

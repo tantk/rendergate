@@ -25,6 +25,7 @@ function isAllowedUrl(urlStr) {
     if (!["http:", "https:"].includes(parsed.protocol)) return false;
     const blocked = ["localhost", "127.0.0.1", "0.0.0.0", "[::1]"];
     if (blocked.includes(parsed.hostname)) return false;
+    if (parsed.hostname.startsWith("[")) return false; // block all IPv6 literals
     const parts = parsed.hostname.split(".");
     if (parts[0] === "10") return false;
     if (parts[0] === "172" && +parts[1] >= 16 && +parts[1] <= 31) return false;
@@ -174,9 +175,11 @@ const server = app.listen(Number(PORT), () => {
   console.log(`  Payments go to ${PAY_TO}`);
 });
 
-process.on("SIGTERM", async () => {
-  console.log("Shutting down...");
-  server.close();
-  await closeBrowser();
-  process.exit(0);
-});
+for (const sig of ["SIGTERM", "SIGINT"]) {
+  process.on(sig, async () => {
+    console.log(`${sig} received, shutting down...`);
+    server.close();
+    await closeBrowser();
+    process.exit(0);
+  });
+}

@@ -1,0 +1,209 @@
+=== RenderGate: https://x.com/stellarorg ===
+Payment: $0.001 USDC on stellar:testnet
+Render time: 7550ms
+
+Title: Stellar (@StellarOrg) / X
+
+Headings (3):
+  H2: Stellar
+  H1: Stellar’s posts
+  H2: New to X?
+
+Links (50):
+  Log in → https://x.com/login
+  Sign up → https://x.com/i/flow/signup
+  stellar.org → https://t.co/M9vXjqAEiU
+  Joined April 2014 → https://x.com/StellarOrg/about
+  710 Following → https://x.com/StellarOrg/following
+  840.1K Followers → https://x.com/StellarOrg/verified_followers
+  Posts → https://x.com/StellarOrg
+  Affiliates → https://x.com/StellarOrg/affiliates
+  Replies → https://x.com/StellarOrg/with_replies
+  Highlights → https://x.com/StellarOrg/highlights
+  Media → https://x.com/StellarOrg/media
+  Stellar → https://x.com/StellarOrg
+  @StellarOrg → https://x.com/StellarOrg
+  Apr 11 → https://x.com/StellarOrg/status/2043019271542820961
+  11K → https://x.com/StellarOrg/status/2043019271542820961/analytics
+
+Content (3765 chars):
+Don’t miss what’s happening
+People on X are the first to know.
+Log in
+Sign up
+Stellar
+9,913 posts
+Follow
+See new posts
+Follow
+Stellar
+@StellarOrg
+Stellar is a network for innovators building real-world blockchain solutions that create financial access for everyone.
+Financial ServicesSan Francisco, Castellar.org
+Joined April 2014
+710 Following
+840.1K Followers
+Posts
+Affiliates
+Replies
+Highlights
+Media
+Stellar’s posts
+Stellar
+@StellarOrg
+·
+Apr 11
+10 days until Stellar House. Who's joining us in CDMX?
+9
+43
+282
+11K
+Stellar reposted
+Tomer Weller
+@tomerweller
+·
+Apr 10
+Epic roundup of defi on Stellar by
+@AdaVaughan
+Stellar | DeFi is happening on Stellar
+From stellar.org
+4
+10
+52
+6.7K
+Stellar
+@StellarOrg
+·
+Apr 10
+We made it to Friday  Ecosystem spotlights in the thread.
+12
+29
+336
+14K
+Show more replies
+Stellar
+@StellarOrg
+·
+Apr 10
+Quote
+Bastian Koh
+@bastiankoh
+·
+Apr 7
+wallet adoption skyrocketing in @BuildOnStellar with stellar passport, a workshop can get their attendees on-chain in seconds today, we brought students to the ecosystem and they kickstarted their builder path x.com/bastiankoh/sta…
+2
+4
+25
+6.3K
+Stellar
+@StellarOrg
+·
+Apr 10
+Quote
+Raj Karia
+@rajkaria_
+·
+Apr 7
+Aegis now supports @StellarOrg Big thanks to @0ceans404 for pushing to go live on Stellar. Here's what Stellar builders can do with Aegis today: → Query XLM + token balances via Horizon (no API key) → Verify Stellar transactions on-chain before granting API access → Fund
+1
+2
+12
+5.8K
+Stellar
+@StellarOrg
+·
+Apr 10
+Privacy is the glass ceiling and we're on a mission to shatter it.
+@tomerweller
+talked about privacy all around Cannes. The highlights 
+0:56
+4
+50
+259
+10K
+Stellar reposted
+Denelle Dixon
+@DenelleDixon
+·
+Apr 10
+.
+@KjOwusu
+gets it exactly right: "the creator economy feels global until it's time to get paid." This is why we built
+@akunawallet
+, to create a bridge between immense talent and opportunity in Ghana and beyond.
+Quote
+Akuna Wallet
+@akunawallet
+·
+Apr 10
+Some Ghanaian creators have been waiting two months for X payouts. This is the structural problem we built Akuna Wallet to solve. A US bank account. Payments in USD, GBP & EUR. Earn globally, spend locally — no delays. Read more from our CEO, @KjOwusu: https://blog.akunawallet.com/ghanaian-creators-are-owed-better-than-this/…
+4
+13
+84
+10K
+Stellar
+@StellarOrg
+·
+Apr 9
+Back to the future: local stablecoins edition.
+@tomerweller
+on block by block with
+@DenelleDixon
+7
+32
+158
+9.4K
+Stellar
+@StellarOrg
+·
+Apr 9
+Watch the episode below.
+youtube.com
+Is Blockchain Privacy a Trade-off? Scaling Confidential Payments on...
+The biggest challenge for institutions moving to blockchain isn't efficiency - it's privacy. How do you leverage a public ledger without exposing client data...
+1
+21
+8.7K
+Stellar reposted
+WisdomTree Prime®
+@WisdomTreePrime
+·
+Apr 9
+We didn’t build WisdomTree Prime to pull people offchain. We built it for the people already there. Across
+@arbitrum
+@avax
+@base
+@ethereum
+@Optimism
+@plumenetwork
+@solana
+@StellarOrg
+One onchain hub.
+3
+11
+62
+6K
+Stellar
+@StellarOrg
+·
+Apr 9
+Building a closed, private network is less secure, less efficient, and more expensive than working with an open network. That's why institutions—
+@FTDA_US
+,
+@WisdomTreePrime
+, and more—choose Stellar.
+Quote
+Denelle Dixon
+@DenelleDixon
+·
+Apr 9
+The long-term winners won't be the chains that control everything from the top down. They'll be the open networks where issuers, regulators, and validators set the rules together. https://stellar.org/blog/ecosystem/why-most-blockchains-still-fail-institutions-and-what-to-do-about-it…
+5
+56
+330
+20K
+New to X?
+Sign up now to get your own personalized timeline!
+Sign up with Apple
+Create account
+By signing up, you agree to the Terms of Service and Privacy Policy, including Cookie Use.

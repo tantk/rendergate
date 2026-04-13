@@ -85,8 +85,6 @@ All tested against the live deployed service at `tantk-rendergate.hf.space` with
 | coinmarketcap.com | 6.0s | Full token page, rankings, data |
 | defillama.com | 3.6s | TVL, fees, revenue, protocol rankings |
 | dexscreener.com | 5.7s | Live pair data — price, volume, liquidity, buy/sell ratio |
-| stellar.expert | 4.5s | Block explorer, network stats |
-| stellarchain.io | 4.7s | Explorer, price, assets |
 | solscan.io | 4.4s | Solana explorer, analytics |
 | etherscan.io | — | Blocked (Cloudflare challenge) |
 | nansen.ai | 3.7s | Landing page content |
@@ -189,12 +187,12 @@ Then the agent can simply call `render_page("https://x.com/stellarorg")` — pay
 ```javascript
 import { wrapFetchWithPayment } from "@x402/fetch";
 
-// One line — the library handles 402 → pay → retry automatically
+const paidFetch = wrapFetchWithPayment(fetch, x402Client);
 const response = await paidFetch(
   "https://tantk-rendergate.hf.space/render?url=https://x.com/stellarorg"
 );
 const data = await response.json();
-// { title: "Stellar (@StellarOrg) / X", content: "9,913 posts...", ... }
+// { title, description, headings, links, content, renderTimeMs, payment }
 ```
 
 The agent just needs:
@@ -224,15 +222,31 @@ Returns service info and usage instructions.
 Health check.
 
 ### `GET /render?url=<encoded_url>` (paid — $0.001 USDC)
-Renders the URL with a headless browser and returns:
+Renders the URL with a headless browser and returns structured output:
 ```json
 {
   "title": "Stellar (@StellarOrg) / X",
-  "content": "9,913 posts... 840.1K Followers... Meridian is headed to Lisbon...",
+  "description": "Meta description from the page",
+  "headings": [{ "level": "H1", "text": "Stellar's posts" }],
+  "links": [{ "text": "stellar.org", "href": "https://stellar.org" }],
+  "content": "Full rendered text content...",
   "url": "https://x.com/stellarorg",
   "renderedAt": "2026-04-13T06:59:12.395Z",
   "renderTimeMs": 8071,
   "payment": { "price": "$0.001", "network": "stellar:testnet" }
+}
+```
+
+If the page is blocked or empty, the payment is automatically refunded:
+```json
+{
+  "title": "Just a moment...",
+  "content": "Cloudflare security verification...",
+  "refund": {
+    "transaction": "bf68b792...",
+    "amount": "0.001 USDC",
+    "reason": "blocked_page"
+  }
 }
 ```
 

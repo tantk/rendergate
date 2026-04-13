@@ -1,0 +1,274 @@
+=== RenderGate: https://soroswap.finance ===
+Payment: $0.001 USDC on stellar:testnet
+Render time: 3240ms
+
+Title: Soroswap - The First DEX Aggregator on Stellar
+Description: Soroswap is the first DEX aggregator on Stellar. Swap tokens at the best prices, provide liquidity, and access DeFi on Soroban with fast, low-cost transactions.
+
+Headings (26):
+  H1: Your gateway to Stellar's financial ecosystem
+  H2: Powering the projects you already use
+  H2: Four DEXs. One call.
+  H3: Soroswap AMM
+  H3: Aquarius
+  H3: Phoenix
+  H3: Stellar Classic
+  H2: One API. Best quotes on Stellar.
+  H3: Plug-and-Play REST API
+  H3: Optimized Aggregated Routing
+  H3: Smooth Integration
+  H3: Gasless Trustlines
+  H2: Built by devs who've been in your shoes
+  H3: Documentation
+  H3: Open Source
+
+Links (30):
+  Home → https://soroswap.finance/#home
+  API → https://soroswap.finance/#features
+  App → https://soroswap.finance/#app
+  Developers → https://soroswap.finance/#developers
+  FAQ → https://soroswap.finance/#faq
+  Explore → https://info.soroswap.finance/
+  Contact → https://soroswap.finance/#contact
+  Launch App → https://app.soroswap.finance/
+  Get API Access → https://docs.soroswap.finance/soroswap-api#api-access
+  Read the docs → https://docs.soroswap.finance/
+  Sell
+0
+XLM → https://app.soroswap.finance/
+  Buy
+0
+USDC → https://app.soroswap.finance/
+  Launch App → https://app.soroswap.finance/
+  Read the docs → https://docs.soroswap.finance/
+  View on GitHub → https://github.com/soroswap
+
+Content (5861 chars):
+Home
+API
+App
+Developers
+FAQ
+Explore
+Contact
+Launch App
+FIRST STELLAR AGGREGATOR
+Your gateway to Stellar's financial ecosystem
+
+One API. All DEXs and AMMs in one place. Gasless onboarding. The infrastructure that powers Stellar's top projects.
+
+Get API Access
+Read the docs
+Swap
+Sell
+0
+XLM
+Buy
+0
+USDC
+1 XLM = 0.237367 USDC
+Launch App
+Powering the projects you already use
+
+These teams chose Soroswap to deliver better prices and smoother UX to their users while monetizing user swaps.
+
+AGGREGATED LIQUIDITY
+Four DEXs. One call.
+
+We aggregate liquidity from every major source on Stellar so your users always get competitive rates.
+
+Soroswap AMM
+
+Stellar AMM
+
+Live
+Aquarius
+
+Stellar AMM
+
+Live
+Phoenix
+
+Stellar AMM
+
+Live
+Stellar Classic
+
+The original SDEX
+
+Live
+
+More liquidity sources = tighter spreads = happier users.
+
+We're continuously adding new pools. Your integration benefits automatically.
+
+THE SOROSWAP API
+One API. Best quotes on Stellar.
+
+The only integration you need to access aggregated liquidity across all Stellar DEXs.
+
+Plug-and-Play REST API
+
+REST endpoints for everything
+
+Not using TypeScript? No problem. Our REST API works with any stack. Get quotes, execute swaps, check pool states—all with simple HTTP calls.
+
+Comprehensive docs. Testnet sandbox. Production-ready.
+
+Optimized Aggregated Routing
+
+Best price. Every time.
+
+Our routing engine queries Aqua, Phoenix, Soroswap AMM, and Stellar Classic DEX in real-time. It splits orders across pools when that gets your users a better rate.
+
+You call one endpoint. We handle the optimization.
+
+Smooth Integration
+
+From zero to production, fast
+
+No weeks of integration work. No blockchain expertise required on your team. Our API and TypeScript SDK handle transaction building, signing flows, and error states.
+
+Your first swap can be live today.
+
+Gasless Trustlines
+
+Trustlines without the friction
+
+Your users shouldn't need to understand Stellar's trustline system to start trading. Our gasless trustline feature handles the complexity behind the scenes.
+
+New user? First swap? No problem. They trade immediately.
+
+DEVELOPER EXPERIENCE
+Built by devs who've been in your shoes
+
+We know what good DX feels like. That's what we built.
+
+Documentation
+
+Comprehensive guides, API references, and tutorials. Copy-paste examples that actually work.
+
+Read the docs
+Open Source
+
+Our SDK, smart contracts, and routing algorithms are open source. Audit the code, fork it, contribute.
+
+View on GitHub
+Support
+
+Stuck on something? Our team responds in Discord. Real engineers, real answers, usually within hours.
+
+Join Discord
+ECOSYSTEM
+Building Stellar's DeFi infrastructure together
+
+Soroswap isn't a standalone product; it's infrastructure. We collaborate with the teams building Stellar's DeFi future because better coordination means better outcomes for everyone.
+
+DeFindex
+
+Yield vault infrastructure for Soroswap Earn
+
+Aquarius
+
+Liquidity aggregation partner
+
+Phoenix
+
+Liquidity aggregation partner
+
+Stellar Development Foundation
+
+Ecosystem support and grants
+
+Stronger together
+DISCOVER OUR APP
+Everything you need for DeFi on Stellar
+API
+Swap
+Earn
+Bridge
+Pools
+Soroswap API
+
+Access aggregated liquidity from all major Stellar DEXs through a single, developer-friendly API. Get the best quotes, execute swaps, and build powerful DeFi applications.
+
+One endpoint for all your swap needs.
+
+Get API Access
+The numbers
+$52.2M+
+Total Volume Routed
+$12K+
+Volume 24h
+3K+
+Total Accounts
+
+Real-time metrics from mainnet
+
+Ready to unlock swaps in your app?
+
+Talk to our team. We'll walk you through the integration and answer your technical questions.
+
+Work email
+Project name
+What are you building?
+Select an option
+Cross-chain Aggregator
+Wallet
+Exchange
+dApp
+Other
+Book a call
+
+Prefer to explore on your own?
+
+Get API key
+Join our Discord
+
+No sales pitch. Just a technical conversation about your use case.
+
+FAQ
+Frequently asked questions
+What is Soroswap?
+
+Soroswap is DeFi infrastructure for Stellar. We provide a liquidity aggregation API that connects your application to multiple DEXs (Aquarius, Phoenix, Soroswap AMM, and Stellar Classic DEX), plus yield strategies through Soroswap Earn. You can also try our technology directly at app.soroswap.finance.
+
+How does the API pricing work?
+
+We offer a free tier with 1 request per second (RPS) to get started. For higher volume, we have Pro and Pro II plans. Additionally, if you enable swap commissions, a percentage goes to Soroswap as revenue share; this way, you can monetize swaps while supporting the protocol.
+
+Which projects are already using Soroswap?
+
+Hot Wallet, Sodax, Decaf, and Socket.fi use our infrastructure to power swaps for their users.
+
+How long does integration take?
+
+Most teams have basic swaps working within a few hours. A production-ready integration typically takes 1-2 days. We provide a TypeScript SDK, REST API, comprehensive docs, and direct support.
+
+What's the difference between using Soroswap directly vs the API?
+
+The Soroswap web app at app.soroswap.finance is for end users who want to swap tokens directly. The API is for developers building wallets, exchanges, or dApps who want to offer swap functionality to their own users.
+
+Do you support cross-chain bridging?
+
+Yes! We support bridging through our integration with Rozo Pay. This allows users to bridge assets from other chains into Stellar seamlessly, expanding the reach of your application.
+
+How does Soroswap Earn work?
+
+Soroswap Earn integrates with Defindex to provide automated yield strategies. Users deposit assets into vaults, and the strategies optimize returns automatically. As a developer, you can offer these yield products to your users through our API.
+
+Still have questions? Ask us on Discord
+
+Stellar's Liquidity Layer
+
+Home
+API
+Liquidity
+App
+Developers
+Partners
+FAQ
+Terms of Use
+Privacy Policy
+
+© 2026 PaltaLabs. All rights reserved.
