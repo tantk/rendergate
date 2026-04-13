@@ -163,7 +163,28 @@ Example transaction: [`5c898eb4...`](https://stellar.expert/explorer/testnet/tx/
 
 ## Using the Service
 
-Any x402-compatible agent can use RenderGate with just the URL. No API keys, no accounts, no setup.
+### Option 1: MCP Tool (Claude Code, Codex, any MCP-compatible agent)
+
+Add to your MCP config (`.mcp.json` or Claude Code settings):
+
+```json
+{
+  "mcpServers": {
+    "rendergate": {
+      "command": "node",
+      "args": ["/path/to/rendergate/mcp-server.js"],
+      "env": {
+        "STELLAR_PRIVATE_KEY": "S...your_testnet_secret_key...",
+        "RENDERGATE_URL": "https://tantk-rendergate.hf.space"
+      }
+    }
+  }
+}
+```
+
+Then the agent can simply call `render_page("https://x.com/stellarorg")` — payment happens transparently.
+
+### Option 2: x402 Fetch (any Node.js agent)
 
 ```javascript
 import { wrapFetchWithPayment } from "@x402/fetch";
@@ -176,14 +197,14 @@ const data = await response.json();
 // { title: "Stellar (@StellarOrg) / X", content: "9,913 posts...", ... }
 ```
 
-That's it. The agent just needs:
+The agent just needs:
 - `@x402/fetch` + `@x402/stellar` (npm packages)
 - A Stellar wallet with USDC
 - Our URL
 
-## Try It
+### Try It
 
-`demo-client.js` is included to test the service end-to-end. It walks through the x402 payment flow step by step.
+`demo-client.js` is included to test the service end-to-end:
 
 ```bash
 npm install

@@ -7,11 +7,18 @@
     "start": "node server.js",
     "demo": "node demo-client.js"
   },
-  "keywords": ["x402", "stellar", "render", "headless-browser", "micropayments"],
+  "keywords": [
+    "x402",
+    "stellar",
+    "render",
+    "headless-browser",
+    "micropayments"
+  ],
   "author": "tantk",
   "license": "MIT",
   "type": "module",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@stellar/stellar-sdk": "^15.0.1",
     "@x402/core": "^2.9.0",
     "@x402/express": "^2.9.0",
