@@ -13,12 +13,12 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-# Install Playwright Chromium
+# Install Playwright Chromium as node user (matches runtime user)
+USER node
 RUN npx playwright install chromium
 
-COPY server.js renderer.js refund.js ./
+COPY --chown=node:node server.js renderer.js refund.js ./
 
-USER node
 ENV PORT=7860
 
 EXPOSE 7860
