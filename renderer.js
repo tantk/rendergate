@@ -63,20 +63,45 @@ export async function renderUrl(url, { timeout = 30000, scroll = true } = {}) {
       await page.waitForTimeout(500);
     }
 
-    const title = await page.title();
-    let content = await page.evaluate(() => {
+    const extracted = await page.evaluate(() => {
       const remove = document.querySelectorAll(
         'script, style, nav[aria-label="Footer"], [role="complementary"]',
       );
       remove.forEach((el) => el.remove());
-      return document.body.innerText;
+
+      const title = document.title;
+      const description =
+        document.querySelector('meta[name="description"]')?.content ||
+        document.querySelector('meta[property="og:description"]')?.content ||
+        "";
+      const headings = Array.from(
+        document.querySelectorAll("h1, h2, h3"),
+        (el) => ({ level: el.tagName, text: el.innerText.trim() }),
+      ).filter((h) => h.text.length > 0);
+      const links = Array.from(
+        document.querySelectorAll("a[href]"),
+        (el) => ({ text: el.innerText.trim(), href: el.href }),
+      )
+        .filter((l) => l.text.length > 0 && l.href.startsWith("http"))
+        .slice(0, 50);
+      const content = document.body.innerText;
+
+      return { title, description, headings, links, content };
     });
 
-    if (content.length > MAX_CONTENT_LENGTH) {
-      content = content.slice(0, MAX_CONTENT_LENGTH);
+    if (extracted.content.length > MAX_CONTENT_LENGTH) {
+      extracted.content = extracted.content.slice(0, MAX_CONTENT_LENGTH);
     }
 
-    return { title, content, url, renderedAt: new Date().toISOString() };
+    return {
+      title: extracted.title,
+      description: extracted.description,
+      headings: extracted.headings,
+      links: extracted.links,
+      content: extracted.content,
+      url,
+      renderedAt: new Date().toISOString(),
+    };
   } catch (err) {
     // If page interaction fails, browser may be dead
     if (err.message?.includes("Target closed") || err.message?.includes("Browser closed")) {
