@@ -1,0 +1,6 @@
+node_modules/
+.env
+test_*.py
+bench_*.py
+__pycache__/
+docs/superpowers/

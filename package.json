@@ -1,0 +1,24 @@
+{
+  "name": "rendergate",
+  "version": "1.0.0",
+  "description": "Pay-per-render headless browser API powered by x402 micropayments on Stellar",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "demo": "node demo-client.js"
+  },
+  "keywords": ["x402", "stellar", "render", "headless-browser", "micropayments"],
+  "author": "tantk",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@stellar/stellar-sdk": "^15.0.1",
+    "@x402/core": "^2.9.0",
+    "@x402/express": "^2.9.0",
+    "@x402/fetch": "^2.9.0",
+    "@x402/stellar": "^2.9.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "playwright": "^1.59.1"
+  }
+}
