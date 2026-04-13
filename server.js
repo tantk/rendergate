@@ -38,11 +38,24 @@ function isAllowedUrl(urlStr) {
 // Extract payer from the PAYMENT-RESPONSE header (set by x402 after settlement)
 function getPayerFromSettlement(res) {
   try {
-    const header = res.getHeader("PAYMENT-RESPONSE");
-    if (!header) return null;
-    const decoded = JSON.parse(Buffer.from(header, "base64").toString());
+    // Try multiple header name cases — Express normalizes to lowercase
+    const header =
+      res.getHeader("PAYMENT-RESPONSE") ||
+      res.getHeader("payment-response") ||
+      res.getHeader("Payment-Response");
+    if (!header) {
+      // Log all response headers for debugging
+      const allHeaders = res.getHeaders();
+      const paymentHeaders = Object.keys(allHeaders).filter(
+        (k) => k.toLowerCase().includes("payment"),
+      );
+      console.log("Payment-related response headers:", paymentHeaders);
+      return null;
+    }
+    const decoded = JSON.parse(Buffer.from(String(header), "base64").toString());
     return decoded?.payer || null;
-  } catch {
+  } catch (err) {
+    console.error("Payer extraction from settlement failed:", err.message);
     return null;
   }
 }
