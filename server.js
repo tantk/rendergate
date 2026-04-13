@@ -3,6 +3,7 @@ import express from "express";
 import { paymentMiddlewareFromConfig } from "@x402/express";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactStellarScheme } from "@x402/stellar/exact/server";
+import { Transaction, Networks, Address } from "@stellar/stellar-sdk";
 import { renderUrl, closeBrowser } from "./renderer.js";
 import { isFailedRender, sendRefund } from "./refund.js";
 
@@ -35,27 +36,26 @@ function isAllowedUrl(urlStr) {
   }
 }
 
-// Extract payer from the PAYMENT-RESPONSE header (set by x402 after settlement)
-function getPayerFromSettlement(res) {
+// Extract payer from the payment-signature request header (Soroban auth entry)
+function getPayerAddress(req) {
   try {
-    // Try multiple header name cases — Express normalizes to lowercase
-    const header =
-      res.getHeader("PAYMENT-RESPONSE") ||
-      res.getHeader("payment-response") ||
-      res.getHeader("Payment-Response");
-    if (!header) {
-      // Log all response headers for debugging
-      const allHeaders = res.getHeaders();
-      const paymentHeaders = Object.keys(allHeaders).filter(
-        (k) => k.toLowerCase().includes("payment"),
-      );
-      console.log("Payment-related response headers:", paymentHeaders);
-      return null;
+    const header = req.get("payment-signature") || req.get("x-payment");
+    if (!header) return null;
+    const decoded = JSON.parse(Buffer.from(header, "base64").toString());
+    const txXdr = decoded?.payload?.transaction;
+    if (!txXdr) return null;
+    const tx = new Transaction(txXdr, Networks.TESTNET);
+    const op = tx.operations[0];
+    if (op?.auth) {
+      for (const a of op.auth) {
+        const creds = a.credentials();
+        if (creds.switch().name === "sorobanCredentialsAddress") {
+          return Address.fromScAddress(creds.address().address()).toString();
+        }
+      }
     }
-    const decoded = JSON.parse(Buffer.from(String(header), "base64").toString());
-    return decoded?.payer || null;
-  } catch (err) {
-    console.error("Payer extraction from settlement failed:", err.message);
+    return null;
+  } catch {
     return null;
   }
 }
@@ -95,27 +95,6 @@ app.use("/render", (req, res, next) => {
   next();
 });
 
-// Post-settlement refund hook — attach finish listener before x402 middleware
-app.use("/render", (req, res, next) => {
-  res.on("finish", async () => {
-    if (!res.locals.needsRefund) return;
-
-    const payer = getPayerFromSettlement(res);
-    if (!payer) {
-      console.log("Refund needed but could not extract payer address");
-      return;
-    }
-
-    const reason = res.locals.failReason || "unknown";
-    console.log(`Issuing refund to ${payer} — reason: ${reason}`);
-    const hash = await sendRefund(payer, REFUND_AMOUNT, `refund:${reason}`);
-    if (hash) {
-      console.log(`Refund sent: ${hash}`);
-    }
-  });
-  next();
-});
-
 // x402 payment middleware — protects /render
 app.use(
   paymentMiddlewareFromConfig(
@@ -148,18 +127,21 @@ app.get("/render", async (req, res) => {
 
     const failReason = isFailedRender(result.content, result.title);
     if (failReason) {
-      // Tag the response so post-settlement hook knows to refund
-      res.locals.needsRefund = true;
-      res.locals.failReason = failReason;
+      const payerAddress = getPayerAddress(req);
+      let refund = null;
+      if (payerAddress) {
+        console.log(`Bad render (${failReason}) for ${decoded} — refunding ${payerAddress}`);
+        const refundHash = await sendRefund(payerAddress, REFUND_AMOUNT, `refund:${failReason}`);
+        refund = refundHash
+          ? { transaction: refundHash, amount: `${REFUND_AMOUNT} USDC`, reason: failReason }
+          : { error: "Refund failed — contact support", reason: failReason };
+      }
 
       return res.json({
         ...result,
         renderTimeMs: elapsed,
         payment: { price: PRICE, network: NETWORK },
-        renderFailed: {
-          reason: failReason,
-          message: "Page was blocked or empty — refund will be issued",
-        },
+        refund,
       });
     }
 
@@ -173,10 +155,16 @@ app.get("/render", async (req, res) => {
     if (err.message.includes("Too many concurrent")) {
       return res.status(503).json({ error: err.message });
     }
-    // Tag for refund on crash too
-    res.locals.needsRefund = true;
-    res.locals.failReason = "render_crash";
-    res.status(500).json({ error: "Render failed", message: err.message });
+    // Attempt refund on crash
+    const payerAddress = getPayerAddress(req);
+    let refund = null;
+    if (payerAddress) {
+      const refundHash = await sendRefund(payerAddress, REFUND_AMOUNT, "refund:render_crash");
+      refund = refundHash
+        ? { transaction: refundHash, amount: `${REFUND_AMOUNT} USDC`, reason: "render_crash" }
+        : { error: "Refund failed — contact support" };
+    }
+    res.status(500).json({ error: "Render failed", message: err.message, refund });
   }
 });
 
